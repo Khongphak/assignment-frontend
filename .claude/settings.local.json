@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
       "Bash(npm run *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(grep -E \"\\\\.\\(config|json|ts\\)$\")",
+      "Bash(npm install *)",
+      "Bash(npx vitest *)",
+      "Bash(npx next *)"
     ]
   }
 }
