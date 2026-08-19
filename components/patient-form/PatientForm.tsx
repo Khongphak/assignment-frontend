@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { PatientFormData, ValidationErrors } from '@/types/patient';
+import { usePatientWS } from '@/hooks/usePatientWS';
 import FormSection from './FormSection';
 import FormField from './FormField';
 import NationalitySelect from './NationalitySelect';
@@ -142,12 +143,14 @@ type PatientFormProps = {
   hospitalCode: string;
 };
 
-export default function PatientForm({ hospitalCode: _hospitalCode }: PatientFormProps) {
+export default function PatientForm({ hospitalCode }: PatientFormProps) {
   const [formData, setFormData] = useState<PatientFormData>(INITIAL_DATA);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+
+  const { wsStatus, sendFillingDebounced, sendSubmitted } = usePatientWS(hospitalCode);
 
   function handleChange(name: keyof PatientFormData, value: string) {
     const updated = { ...formData, [name]: value };
@@ -155,6 +158,7 @@ export default function PatientForm({ hospitalCode: _hospitalCode }: PatientForm
     if (hasSubmitted) {
       setErrors(validate(updated));
     }
+    sendFillingDebounced(updated);
   }
 
   function handleSubmit() {
@@ -162,6 +166,7 @@ export default function PatientForm({ hospitalCode: _hospitalCode }: PatientForm
     setErrors(newErrors);
     setHasSubmitted(true);
     if (Object.keys(newErrors).length === 0) {
+      sendSubmitted(formData);
       setIsSuccess(true);
     }
   }
@@ -206,6 +211,27 @@ export default function PatientForm({ hospitalCode: _hospitalCode }: PatientForm
 
   return (
     <div className="space-y-10">
+      {/* WebSocket connection status banner */}
+      {wsStatus !== 'connected' && (
+        <div
+          role="status"
+          className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+            wsStatus === 'connecting'
+              ? 'border-amber-200 bg-amber-50 text-amber-700'
+              : 'border-red-200 bg-red-50 text-red-700'
+          }`}
+        >
+          <span
+            className={`size-2 shrink-0 rounded-full ${
+              wsStatus === 'connecting' ? 'animate-pulse bg-amber-500' : 'bg-red-500'
+            }`}
+          />
+          {wsStatus === 'connecting'
+            ? 'กำลังเชื่อมต่อ — ข้อมูลจะถูกส่งแบบ real-time เมื่อเชื่อมต่อสำเร็จ'
+            : 'ขาดการเชื่อมต่อ — ข้อมูลที่กรอกจะไม่ถูกส่งแบบ real-time'}
+        </div>
+      )}
+
       <FormSection number={1} title="Name">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <FormField

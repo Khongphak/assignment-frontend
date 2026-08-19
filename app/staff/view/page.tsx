@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken, clearToken } from '@/lib/auth/token';
-import { getMockSessions } from '@/lib/mock/staffSessions';
+import { clearToken } from '@/lib/auth/token';
+import { useStaffWS } from '@/hooks/useStaffWS';
 import { PatientSessionCard } from '@/components/staff/PatientSessionCard';
 import type { StaffSessionMessage, SessionStatus } from '@/types/staff';
 
@@ -22,36 +22,14 @@ function countByStatus(sessions: StaffSessionMessage[], status: SessionStatus) {
 
 export default function StaffViewPage() {
   const router = useRouter();
-  const [sessions, setSessions] = useState<StaffSessionMessage[]>([]);
+  const { sessions, wsStatus, tokenMissing } = useStaffWS();
   const [filter, setFilter] = useState<FilterValue>('all');
-  const [isReady, setIsReady] = useState(false);
-
-  const loadSessions = useCallback(() => {
-    // FE-3: Remove this function and replace with WebSocket message handler.
-    // WS pattern:
-    //   ws.onmessage = (e) => {
-    //     const msg: StaffSessionMessage = JSON.parse(e.data);
-    //     setSessions(prev => {
-    //       const map = new Map(prev.map(s => [s.session_id, s]));
-    //       map.set(msg.session_id, msg);
-    //       return Array.from(map.values());
-    //     });
-    //   };
-    setSessions(getMockSessions());
-  }, []);
 
   useEffect(() => {
-    if (!getToken()) {
+    if (tokenMissing) {
       router.replace('/staff');
-      return;
     }
-    setIsReady(true);
-    loadSessions();
-
-    // Simulate periodic refresh; remove in FE-3 (WS provides push updates)
-    const intervalId = setInterval(loadSessions, 8000);
-    return () => clearInterval(intervalId);
-  }, [router, loadSessions]);
+  }, [tokenMissing, router]);
 
   function handleLogout() {
     clearToken();
@@ -68,14 +46,17 @@ export default function StaffViewPage() {
     inactive: countByStatus(sessions, 'inactive'),
   };
 
-  if (!isReady) {
+  if (wsStatus === 'connecting' && sessions.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <span
-          className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"
-          role="status"
-          aria-label="กำลังโหลด"
-        />
+        <div className="flex flex-col items-center gap-3">
+          <span
+            className="size-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"
+            role="status"
+            aria-label="กำลังเชื่อมต่อ"
+          />
+          <p className="text-sm text-slate-500">กำลังเชื่อมต่อ…</p>
+        </div>
       </div>
     );
   }
@@ -105,8 +86,30 @@ export default function StaffViewPage() {
               </svg>
             </div>
             <span className="text-sm font-semibold text-slate-900">Staff View</span>
-            <span className="ml-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-600">
-              Mock
+            {/* WebSocket connection status */}
+            <span
+              className={`ml-1 flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                wsStatus === 'connected'
+                  ? 'bg-green-50 text-green-700'
+                  : wsStatus === 'connecting'
+                  ? 'bg-amber-50 text-amber-600'
+                  : 'bg-red-50 text-red-600'
+              }`}
+            >
+              <span
+                className={`size-1.5 rounded-full ${
+                  wsStatus === 'connected'
+                    ? 'animate-pulse bg-green-500'
+                    : wsStatus === 'connecting'
+                    ? 'animate-pulse bg-amber-500'
+                    : 'bg-red-500'
+                }`}
+              />
+              {wsStatus === 'connected'
+                ? 'Live'
+                : wsStatus === 'connecting'
+                ? 'กำลังเชื่อมต่อ'
+                : 'ขาดการเชื่อมต่อ'}
             </span>
           </div>
 
@@ -133,12 +136,22 @@ export default function StaffViewPage() {
         </div>
       </header>
 
+      {/* Disconnected warning banner */}
+      {wsStatus === 'disconnected' && (
+        <div
+          role="alert"
+          className="border-b border-red-200 bg-red-50 px-4 py-2 text-center text-sm text-red-700 sm:px-6"
+        >
+          ขาดการเชื่อมต่อ — ข้อมูลอาจไม่เป็นปัจจุบัน กรุณารีเฟรชหน้า
+        </div>
+      )}
+
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         {/* Page title */}
         <div className="mb-6">
           <h1 className="text-xl font-bold text-slate-900">Session ผู้ป่วย</h1>
           <p className="mt-0.5 text-sm text-slate-500">
-            อัปเดตอัตโนมัติทุก 8 วินาที — {sessions.length} session ทั้งหมด
+            Real-time — {sessions.length} session ทั้งหมด
           </p>
         </div>
 
@@ -173,7 +186,9 @@ export default function StaffViewPage() {
         {/* Session grid */}
         {filtered.length === 0 ? (
           <div className="py-16 text-center text-sm text-slate-400">
-            ไม่มี session ที่ตรงกับตัวกรองนี้
+            {wsStatus === 'connected'
+              ? 'ไม่มี session ที่ตรงกับตัวกรองนี้'
+              : 'รอการเชื่อมต่อ WebSocket…'}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
