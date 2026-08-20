@@ -6,13 +6,15 @@ import type { StaffSessionMessage } from '@/types/staff';
 
 export type WsStatus = 'connecting' | 'connected' | 'disconnected';
 
-export function useStaffWS() {
+export function useStaffWS(skip = false) {
   const [sessions, setSessions] = useState<StaffSessionMessage[]>([]);
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
   const [tokenMissing, setTokenMissing] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    if (skip) return;
+
     const token = getToken();
     if (!token) {
       setTokenMissing(true);
@@ -52,7 +54,7 @@ export function useStaffWS() {
     return () => {
       ws.close();
     };
-  }, []);
+  }, [skip]);
 
   return { sessions, wsStatus, tokenMissing };
 }
