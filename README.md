@@ -1,6 +1,6 @@
 # agnos-frontend
 
-Next.js 16 frontend for the Agnos assessment, built with the App Router, TypeScript, Tailwind CSS, and ESLint.
+Hospital middleware frontend that connects patients and staff in real time. Patients use a registration form to submit their information; staff monitor all active patient sessions live via a real-time dashboard. Built with Next.js App Router, TypeScript, Tailwind CSS, and WebSocket.
 
 ## Project Structure
 
@@ -14,6 +14,14 @@ agnos-frontend/
 ├── types/            # Shared TypeScript types and interfaces
 └── public/           # Static assets served at the root path
 ```
+
+## Pages
+
+| Path | Description |
+|---|---|
+| `/patient?hospital_code=<code>` | Patient Registration Form — กรอกข้อมูลและส่งแบบฟอร์ม real-time |
+| `/staff` | Staff Login |
+| `/staff/view` | Staff Real-Time View — ดู patient sessions แบบ live พร้อม status filter |
 
 ## Setup
 
@@ -34,7 +42,7 @@ Edit `.env.local` and fill in the values:
 | Variable | Description |
 |---|---|
 | `NEXT_PUBLIC_API_BASE_URL` | Base URL for the REST API |
-| `NEXT_PUBLIC_WS_URL` | WebSocket server URL |
+| `NEXT_PUBLIC_WS_BASE_URL` | WebSocket server URL |
 
 ### 3. Run the development server
 
@@ -56,3 +64,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## Deploying to Vercel
 
 Push to GitHub and import the repository in the [Vercel dashboard](https://vercel.com/new). Set the environment variables from `.env.local.example` in **Project Settings → Environment Variables** before deploying.
+
+## Bonus features
+
+- **httpOnly cookie สำหรับ refresh token** — refresh_token เก็บใน httpOnly cookie ผ่าน Next.js Server Action ไม่ถูก JavaScript อ่านได้
+- **Auto-refresh** — access_token ถูก refresh อัตโนมัติก่อนหมดอายุ 60 วินาที ไม่ต้อง login ใหม่
+- **Restore session on reload** — เปิดหน้า `/staff/view` ใหม่จะ restore access token จาก cookie อัตโนมัติ
+- **WebSocket status indicator** — แสดง live / กำลังเชื่อมต่อ / ขาดการเชื่อมต่อ แบบ real-time
+- **Session filter tabs** — กรอง patient session ตาม status: filling / submitted / inactive พร้อม count
