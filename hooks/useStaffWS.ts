@@ -21,7 +21,7 @@ export function useStaffWS(skip = false) {
       return;
     }
 
-    const url = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/api/ws/staff?token=${token}`;
+    const url = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/ws/staff?token=${token}`;
     const ws = new WebSocket(url);
     wsRef.current = ws;
 

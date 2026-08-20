@@ -22,7 +22,7 @@ export function usePatientWS(hospitalCode: string) {
       return;
     }
 
-    const url = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/api/ws/patient?hospital_code=${hospitalCode}`;
+    const url = `${process.env.NEXT_PUBLIC_WS_BASE_URL}/ws/patient?hospital_code=${hospitalCode}`;
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
