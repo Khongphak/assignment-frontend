@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { setToken, clearToken } from '@/lib/auth/token';
+import { setToken } from '@/lib/auth/token';
+import { loginAction } from '@/app/actions/auth';
 import type { StaffLoginRequest } from '@/types/staff';
 
 export function useStaffAuth() {
@@ -13,17 +14,12 @@ export function useStaffAuth() {
     setError(null);
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/staff/login`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(credentials) }
-      );
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        setError(body?.error?.message ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+      const result = await loginAction(credentials);
+      if ('error' in result) {
+        setError(result.error);
         return false;
       }
-      const { access_token } = await res.json();
-      setToken(access_token);
+      setToken(result.access_token);
       return true;
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
@@ -33,9 +29,5 @@ export function useStaffAuth() {
     }
   }
 
-  function logout() {
-    clearToken();
-  }
-
-  return { login, logout, isLoading, error };
+  return { login, isLoading, error };
 }

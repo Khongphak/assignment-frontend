@@ -3,16 +3,21 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStaffAuth } from '@/hooks/useStaffAuth';
-import { getToken } from '@/lib/auth/token';
+import { setToken } from '@/lib/auth/token';
+import { refreshAction } from '@/app/actions/auth';
 
 export default function StaffLoginPage() {
   const router = useRouter();
   const { login, isLoading, error } = useStaffAuth();
   const [form, setForm] = useState({ username: '', password: '', hospital_code: '' });
 
-  // Skip login page when already authenticated
   useEffect(() => {
-    if (getToken()) router.replace('/staff/view');
+    refreshAction().then((result) => {
+      if (result) {
+        setToken(result.access_token);
+        router.replace('/staff/view');
+      }
+    });
   }, [router]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {

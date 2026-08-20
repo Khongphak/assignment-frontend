@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearToken } from '@/lib/auth/token';
+import { logoutAction } from '@/app/actions/auth';
 import { useStaffWS } from '@/hooks/useStaffWS';
+import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import { PatientSessionCard } from '@/components/staff/PatientSessionCard';
 import type { StaffSessionMessage, SessionStatus } from '@/types/staff';
 
@@ -22,16 +24,18 @@ function countByStatus(sessions: StaffSessionMessage[], status: SessionStatus) {
 
 export default function StaffViewPage() {
   const router = useRouter();
-  const { sessions, wsStatus, tokenMissing } = useStaffWS();
+  const { tokenMissing: refreshTokenMissing, ready } = useTokenRefresh();
+  const { sessions, wsStatus, tokenMissing } = useStaffWS(!ready);
   const [filter, setFilter] = useState<FilterValue>('all');
 
   useEffect(() => {
-    if (tokenMissing) {
+    if (tokenMissing || refreshTokenMissing) {
       router.replace('/staff');
     }
-  }, [tokenMissing, router]);
+  }, [tokenMissing, refreshTokenMissing, router]);
 
-  function handleLogout() {
+  async function handleLogout() {
+    await logoutAction();
     clearToken();
     router.push('/staff');
   }
