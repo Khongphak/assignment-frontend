@@ -119,7 +119,7 @@ export default function StaffViewPage() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700"
+            className="flex cursor-pointer items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700"
           >
             <svg
               className="size-4"
